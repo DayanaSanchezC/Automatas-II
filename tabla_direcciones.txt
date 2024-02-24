@@ -1,0 +1,2 @@
+ID             TOKEN          NO. LINEA      VCI       
+hipotenusa@    -55            1              0         
