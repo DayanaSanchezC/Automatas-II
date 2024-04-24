@@ -1,11 +1,16 @@
+
 import java.io.*;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class Analizador {
+    private static HashMap<String, String> tablaSimbolos = new HashMap<>(); // Tabla de símbolos
+    private static HashMap<String, String> tablaDirecciones = new HashMap<>(); // Tabla de direcciones
+    private static int posicionEnTabla = 1; // Posición actual en la tabla de símbolos
+
     public static void main(String[] args) {
-        boolean primeraVezVariables = true; // Variable para indicar si es la primera vez que se encuentran las variables después de la segunda aparición de "programa"
-        HashSet<String> contadorPalabras = new HashSet<>(); // Conjunto para mantener un registro de variables ya encontradas
-            
+        boolean primeraVezVariables = true;
+
         try {
             BufferedReader br = new BufferedReader(new FileReader("entrada.txt"));
             BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_simbolos.txt"));
@@ -18,33 +23,47 @@ public class Analizador {
             while ((linea = br.readLine()) != null) {
                 if (linea.trim().equals("variables")) {
                     if (!primeraVezVariables) {
-                        continue; // Saltar la línea que contiene "variables" después de la primera vez
+                        continue;
                     } else {
-                        primeraVezVariables = false; // Marcar que ya se han encontrado las variables por primera vez
+                        primeraVezVariables = false;
                     }
                 }
 
                 if (linea.trim().equals("inicio")) {
-                    break; // Salir del bucle al encontrar "inicio" después de la segunda aparición de "programa"
+                    break;
                 }
 
                 String[] tokens = linea.split("[\\s,;]+");
                 for (int i = 0; i < tokens.length; i++) {
                     String token = tokens[i];
                     if (token.contains("$") || token.contains("%") || token.contains("#") || token.contains("&")) {
-                        String[] partes = token.split("[$%&#]+"); // Dividir el token por los caracteres especiales
+                        String[] partes = token.split("[$%&#]+");
                         if (partes.length > 0) {
-                            String nombre = partes[0]; // Tomar la primera parte como el nombre
-                            if (!contadorPalabras.contains(nombre)) { // Verificar si el nombre ya ha sido encontrado
-                                contadorPalabras.add(nombre); // Agregar el nombre al conjunto de nombres encontrados
-                                String simbolo = obtenerSimbolo(token);
-                                String tipo = obtenerTipoVariable(token);
-                                String valor = obtenerValor(token);
-                                bw.write(String.format("%-15s", nombre + simbolo));
+                            String nombre = partes[0].trim();
+                            String simbolo = obtenerSimbolo(token);
+                            String tipo = obtenerTipoVariable(token);
+                            String valor = obtenerValor(token);
+
+                            if (!tablaSimbolos.containsKey(nombre)) {
+                                tablaSimbolos.put(nombre, tipo);
+                                bw.write(String.format("%-15s", nombre +simbolo));
                                 bw.write(String.format("%-15s", tipo));
                                 bw.write(String.format("%-10s", valor));
                                 bw.write(String.format("%-10s", "main"));
                                 bw.newLine();
+
+                                if (tipo.equals("-51") || tipo.equals("-52") || tipo.equals("-53") || tipo.equals("-54")) {
+                                    if (!tablaDirecciones.containsKey(nombre)) {
+                                        tablaDirecciones.put(nombre, "@" + posicionEnTabla);
+                                        posicionEnTabla++;
+                                    } else {
+                                        System.err.println("Error: Identificador duplicado - " + nombre);
+                                    }
+                                } else {
+                                    System.err.println("Error: Uso no adecuado del tipo de dato - " + nombre);
+                                }
+                            } else {
+                                System.err.println("Error: Identificador ya declarado - " + nombre);
                             }
                         }
                     }
@@ -54,7 +73,7 @@ public class Analizador {
             // Cerrar archivo de tabla de símbolos
             bw.close();
             System.out.println("Tabla de símbolos generada correctamente.");
-            
+
             // Generar tabla de direcciones
             generarTablaDirecciones();
 
@@ -63,7 +82,7 @@ public class Analizador {
         }
     }
 
-    private static void generarTablaDirecciones() {
+       private static void generarTablaDirecciones() {
         try {
             BufferedReader br = new BufferedReader(new FileReader("entrada.txt"));
             BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_direcciones.txt"));
@@ -101,9 +120,8 @@ public class Analizador {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        NuevaTablaDeTokens.generarNuevaTabla();
     }
-    
-    
     private static String obtenerSimbolo(String token) {
         if (token.contains("$")) {
             return "$";
@@ -127,7 +145,8 @@ public class Analizador {
             tipo = "-53"; // Token para cadena
         } else if (token.contains("#")) {
             tipo = "-54"; // Token para lógico
-        } else if (token.contains("@")) {
+        }
+        else if (token.contains("@")) {
             tipo = "-55"; // Token para lógico
         }
         return tipo;
@@ -146,5 +165,48 @@ public class Analizador {
         }
         return valor;
     }
-    
 }
+
+class NuevaTablaDeTokens {
+    public static void generarNuevaTabla() {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("entrada.txt"));
+            BufferedWriter bw = new BufferedWriter(new FileWriter("nuevaTablaTokens.txt"));
+
+            HashMap<String, Integer> tablaTokens = new HashMap<>();
+            int posicionEnTabla = 0;
+            int posicionDir=0;
+
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                String[] partes = linea.split("\\|");
+                String nombre = partes[0];
+
+                if (nombre.contains("$") || nombre.contains("%") || nombre.contains("#") || nombre.contains("&")) {
+                    if (!tablaTokens.containsKey(nombre)) {
+                        tablaTokens.put(nombre, posicionEnTabla);
+                        posicionEnTabla++;
+                    }
+                }
+                if (nombre.contains("@") ){
+                    if (!tablaTokens.containsKey(nombre)) {
+                        tablaTokens.put(nombre, posicionDir);
+                        posicionDir++;
+                    }
+                }
+
+                int posicion = tablaTokens.getOrDefault(nombre, -1);
+                bw.write(String.format("%-15s%-15s%-15s%-10s", nombre, partes[1], posicion, partes[3]));
+                bw.newLine();
+            }
+
+            br.close();
+            bw.close();
+            System.out.println("Nueva tabla de tokens generada correctamente.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
