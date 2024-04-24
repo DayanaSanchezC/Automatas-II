@@ -1,6 +1,0 @@
-ID             TOKEN          VALOR     AMBITO    
-radio%         -52            0.0       main      
-radiocuadrado% -52            0.0       main      
-pi%            -52            0.0       main      
-area%          -52            0.0       main      
-cumple#        -54            true      main      
