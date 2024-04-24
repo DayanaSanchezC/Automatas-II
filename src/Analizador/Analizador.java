@@ -6,64 +6,73 @@ import javax.swing.JFileChooser;
 
 public class Analizador {
     private static ArrayList<String> simbolos = new ArrayList<>();
+    private static ArrayList<String> escSimbolos = new ArrayList<>();
     private static ArrayList<String> direcciones = new ArrayList<>();
     private static boolean error = false;
 
     public static void main(String[] args) {
         String nombreArchivo = seleccionarArchivo();
         Token[] tokens = procesarArchivo(nombreArchivo);
-        generarTablaSimbolos(tokens, simbolos);
-        generarTablaDirecciones(tokens);
-        generarNuevaTabla(nombreArchivo, tokens, simbolos, direcciones);
         malDeclaradas(tokens, simbolos);
         caracter(tokens, simbolos);
         verificarOp(tokens);
+        generarTablaSimbolos(tokens, simbolos);
+        noDeclaradas(tokens, simbolos);
+        generarTablaDirecciones(tokens);
+        generarNuevaTabla(nombreArchivo, tokens, simbolos, direcciones);
+        escribirTablaSimbolos(escSimbolos);
+    }
+
+    private static void escribirTablaSimbolos( ArrayList<String> escsimbolo) {
+        if(!error){
+            try {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_simbolos.txt"));
+                if(!error){
+                for (String simbolo : escsimbolo) {
+                    bw.write(simbolo);
+                    bw.newLine();
+                }
+            }
+                bw.close();
+                System.out.println("Tabla de símbolos generada correctamente.");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
     }
 
     private static void generarTablaSimbolos(Token[] tokens, ArrayList<String> simbolo) {
-        try {
-            if(!error){
-            BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_simbolos.txt"));
-            boolean primeraVezVariables = false;
-            for (int i = 0; i < tokens.length; i++) {
-                Token token = tokens[i];
-                if (token.token.equals("-15")) {
-                    primeraVezVariables = true;
-                    continue;
-                }
-                if (token.token.equals("-2")) {
-                    break;
-                }
-                if (primeraVezVariables) {
-                    if (simbolo.contains(token.lexema)) {
-                        System.err.println("La variable " + token.lexema + " ya fue declarada");
-                        error=true;
-                    }
-                    if (token.token.equals("-51")) {
-                        bw.write(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "0", "Main"));
-                        bw.newLine();
-                        simbolos.add(token.lexema);
-                    } else if (token.token.equals("-52")) {
-                        bw.write(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "0.0", "Main"));
-                        bw.newLine();
-                        simbolos.add(token.lexema);
-                    } else if (token.token.equals("-53")) {
-                        bw.write(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "null", "Main"));
-                        bw.newLine();
-                        simbolos.add(token.lexema);
-                    } else if (token.token.equals("-54")) {
-                        bw.write(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "true", "Main"));
-                        bw.newLine();
-                        simbolos.add(token.lexema);
-                    }
-
-                }
+        boolean primeraVezVariables = false;
+        for (int i = 0; i < tokens.length; i++) {
+            Token token = tokens[i];
+            if (token.token.equals("-15")) {
+                primeraVezVariables = true;
+                continue;
             }
-            bw.close();
-            System.out.println("Tabla de símbolos generada correctamente.");
-        }
-        } catch (IOException e) {
-            e.printStackTrace();
+            if (token.token.equals("-2")) {
+                break;
+            }
+            if (primeraVezVariables) {
+                if (simbolo.contains(token.lexema)) {
+                    System.err.println("La variable " + token.lexema + " ya fue declarada");
+                    error=true;
+                }
+                if (token.token.equals("-51")) {
+                    escSimbolos.add(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "0", "Main"));
+                    simbolos.add(token.lexema);
+                } else if (token.token.equals("-52")) {
+                    escSimbolos.add(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "0.0", "Main"));
+                    simbolos.add(token.lexema);
+                } else if (token.token.equals("-53")) {
+                    escSimbolos.add(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "null", "Main"));
+                    simbolos.add(token.lexema);
+                } else if (token.token.equals("-54")) {
+                    escSimbolos.add(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "true", "Main"));
+                    simbolos.add(token.lexema);
+                }
+
+            }
         }
     }
 
@@ -315,7 +324,20 @@ public class Analizador {
                 || token.equals("-74") || token.equals("-3") || token.equals("-4");
     }
 
-    
+    private static void noDeclaradas(Token[] tokens, ArrayList<String> simbolo) {
+
+        for (int i = 0; i < tokens.length; i++) {
+            Token token = tokens[i];
+            if (token.token.equals("-51") || token.token.equals("-52") || token.token.equals("-53")
+                    || token.token.equals("-54")) {
+                if (!simbolo.contains(token.lexema)) {
+                    System.err.println("Error: La variable " + token + " no está declarada");
+                    error=true;
+
+                }
+            }
+        }
+    }
 
     public static String seleccionarArchivo() {
         JFileChooser fileChooser = new JFileChooser();
