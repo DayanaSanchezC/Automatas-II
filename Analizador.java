@@ -1,4 +1,3 @@
-package Analizador;
 
 import java.io.*;
 import java.util.*;
@@ -13,7 +12,6 @@ public class Analizador {
     public static void main(String[] args) {
         String nombreArchivo = seleccionarArchivo();
         Token[] tokens = procesarArchivo(nombreArchivo);
-        malDeclaradas(tokens, simbolos);
         caracter(tokens, simbolos);
         verificarOp(tokens);
         generarTablaSimbolos(tokens, simbolos);
@@ -23,17 +21,16 @@ public class Analizador {
         escribirTablaSimbolos(escSimbolos);
     }
 
-    
-    private static void escribirTablaSimbolos( ArrayList<String> escsimbolo) {
-        if(!error){
+    private static void escribirTablaSimbolos(ArrayList<String> escsimbolo) {
+        if (!error) {
             try {
                 BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_simbolos.txt"));
-                if(!error){
-                for (String simbolo : escsimbolo) {
-                    bw.write(simbolo);
-                    bw.newLine();
+                if (!error) {
+                    for (String simbolo : escsimbolo) {
+                        bw.write(simbolo);
+                        bw.newLine();
+                    }
                 }
-            }
                 bw.close();
                 System.out.println("Tabla de símbolos generada correctamente.");
             } catch (IOException e) {
@@ -57,7 +54,7 @@ public class Analizador {
             if (primeraVezVariables) {
                 if (simbolo.contains(token.lexema)) {
                     System.err.println("La variable " + token.lexema + " ya fue declarada");
-                    error=true;
+                    error = true;
                 }
                 if (token.token.equals("-51")) {
                     escSimbolos.add(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, "0", "Main"));
@@ -75,56 +72,58 @@ public class Analizador {
 
             }
         }
+       
+
     }
 
     private static void generarTablaDirecciones(Token[] tokens) {
         try {
-            if(!error){
-            BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_direcciones.txt"));
-            for (int i = 0; i < tokens.length; i++) {
-                Token token = tokens[i];
-                if (token.token.equals("-55")) {
-                    bw.write(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, token.linea, "0"));
-                    bw.newLine();
-                    direcciones.add(token.lexema);
+            if (!error) {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("tabla_direcciones.txt"));
+                for (int i = 0; i < tokens.length; i++) {
+                    Token token = tokens[i];
+                    if (token.token.equals("-55")) {
+                        bw.write(String.format("%-20s%-6s%-10s%-10s", token.lexema, token.token, token.linea, "0"));
+                        bw.newLine();
+                        direcciones.add(token.lexema);
+                    }
                 }
-            }
 
-            // Cerrar archivo de tabla de direcciones
-            bw.close();
-            System.out.println("Tabla de direcciones generada correctamente.");
-        }
+                // Cerrar archivo de tabla de direcciones
+                bw.close();
+                System.out.println("Tabla de direcciones generada correctamente.");
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-    
+
     }
 
     public static void generarNuevaTabla(String nombreArchivo, Token[] tokens, ArrayList<String> simbolo,
             ArrayList<String> direcciones) {
         try {
-            if(!error){
-            BufferedWriter bw = new BufferedWriter(new FileWriter("nuevatabla.txt"));
+            if (!error) {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("nuevatabla.txt"));
 
-            for (int i = 0; i < tokens.length; i++) {
-                Token token = tokens[i];
-                if (simbolo.contains(token.lexema)) {
-                    token.setPts(String.valueOf(simbolo.indexOf(token.lexema)));
+                for (int i = 0; i < tokens.length; i++) {
+                    Token token = tokens[i];
+                    if (simbolo.contains(token.lexema)) {
+                        token.setPts(String.valueOf(simbolo.indexOf(token.lexema)));
+                    }
+                    if (direcciones.contains(token.lexema)) {
+                        token.setPts(String.valueOf(direcciones.indexOf(token.lexema)));
+                    }
+                    bw.write(token.toString());
+                    bw.newLine();
                 }
-                if (direcciones.contains(token.lexema)) {
-                    token.setPts(String.valueOf(direcciones.indexOf(token.lexema)));
-                }
-                bw.write(token.toString());
-                bw.newLine();
+
+                File original = new File(nombreArchivo);
+                original.delete();
+                bw.close();
+                File tablaModificada = new File("nuevatabla.txt");
+                tablaModificada.renameTo(new File(nombreArchivo));
+                System.out.println("Nueva tabla de tokens generada correctamente.");
             }
-
-            File original = new File(nombreArchivo);
-            original.delete();
-            bw.close();
-            File tablaModificada = new File("nuevatabla.txt");
-            tablaModificada.renameTo(new File(nombreArchivo));
-            System.out.println("Nueva tabla de tokens generada correctamente.");
-        }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -148,141 +147,39 @@ public class Analizador {
                         || !token.lexema.endsWith("%") && token.token.equals("-52")
                         || !token.lexema.endsWith("$") && token.token.equals("-53")
                         || !token.lexema.endsWith("#") && token.token.equals("-54")) {
-                    System.err.println("Error: Caracter de control incorrecto en el lexema " + token.lexema);
-                    error=true;
+                    System.err.println("Advertencia: Caracter de control incorrecto en el lexema " + token.lexema);
+                    error = true;
 
                 }
             }
         }
     }
 
-    private static void malDeclaradas(Token[] tokens, ArrayList<String> simbolo) {
-        ArrayList<String> variablesIncorrectas = new ArrayList<>();
-        boolean primeraVezVariables = false;
-        for (int i = 0; i < tokens.length; i++) {
-            Token token = tokens[i];
-            if (token.token.equals("-15")) {
-                primeraVezVariables = true;
-                continue;
-            }
-            if (token.token.equals("-2")) {
-                break;
-            }
-            if (primeraVezVariables) {
-
-                if (token.token.equals("-11") && i < tokens.length - 1) {
-                    while (!token.token.equals("-75")) {
-                        i++;
-                        if (tokens[i].token.equals("-76")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-51")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-75")) {
-                            break;
-                        }
-                        if (tokens[i] != null && tokens[i].token != null && !tokens[i].token.isEmpty() &&
-                                !tokens[i].token.equals("-51") && !tokens[i].token.equals("-76")
-                                && !tokens[i].token.equals("-75")) {
-                            variablesIncorrectas.add(tokens[i].lexema);
-                            error=true;
-
-                        }
-
-                    }
-                }
-
-                if (token.token.equals("-12") && i < tokens.length - 1) {
-                    while (!token.token.equals("-75")) {
-                        i++;
-                        if (tokens[i].token.equals("-76")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-52")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-75")) {
-                            break;
-                        }
-                        if (tokens[i] != null && tokens[i].token != null && !tokens[i].token.isEmpty() &&
-                                !tokens[i].token.equals("-52") && !tokens[i].token.equals("-76")
-                                && !tokens[i].token.equals("-75")) {
-                            variablesIncorrectas.add(tokens[i].lexema);
-                            error=true;
-
-                        }
-
-                    }
-                }
-
-                if (token.token.equals("-13") && i < tokens.length - 1) {
-                    while (!token.token.equals("-75")) {
-                        i++;
-                        if (tokens[i].token.equals("-76")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-53")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-75")) {
-                            break;
-                        }
-                        if (tokens[i] != null && tokens[i].token != null && !tokens[i].token.isEmpty() &&
-                                !tokens[i].token.equals("-53") && !tokens[i].token.equals("-76")
-                                && !tokens[i].token.equals("-75")) {
-                            variablesIncorrectas.add(tokens[i].lexema);
-                            error=true;
-
-                        }
-
-                    }
-                }
-
-                if (token.token.equals("-14") && i < tokens.length - 1) {
-                    while (!token.token.equals("-75")) {
-                        i++;
-                        if (tokens[i].token.equals("-76")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-54")) {
-                            continue;
-                        } else if (tokens[i].token.equals("-75")) {
-                            break;
-                        }
-                        if (tokens[i] != null && tokens[i].token != null && !tokens[i].token.isEmpty() &&
-                                !tokens[i].token.equals("-54") && !tokens[i].token.equals("-76")
-                                && !tokens[i].token.equals("-75")) {
-                            variablesIncorrectas.add(tokens[i].lexema);
-                            error=true;
-
-                        }
-
-                    }
-                }
-
-            }
-        }
-        for (String variable : variablesIncorrectas) {
-            System.err.println("Error: La variable " + variable + " no corresponde al Identificador");
-        }
-    }
 
     private static void verificarOp(Token[] tokens) {
         for (int i = 0; i < tokens.length; i++) {
-            if (tokens[i].token.equals("-51") && esOperadorMatematico(tokens[i+1].getToken())) {
+            if (tokens[i].token.equals("-51") && esOperadorMatematico(tokens[i + 1].getToken())) {
                 i += 2;
                 while (!tokens[i].token.equals("-75")) {
                     String siguienteToken = tokens[i].token;
                     if (!esOperadorMatematico(siguienteToken) && !siguienteToken.equals("-51")
                             && !siguienteToken.equals("-61")) {
-                        System.out.println("Error de operación: Token inesperado " + tokens[i]);
-                        error=true;
+                        System.out.println("Advertencia en la operación: Token inesperado " + tokens[i]);
+                        error = true;
 
                     }
                     i++;
                 }
             }
-            if (tokens[i].token.equals("-52") && esOperadorMatematico(tokens[i+1].getToken())) {
-                while (!tokens[i].token.equals("-75")&&!tokens[i].token.equals("-74")&&!tokens[i].token.equals("-73")) {
+
+            if (tokens[i].token.equals("-52") && esOperadorMatematico(tokens[i + 1].getToken())) {
+                while (!tokens[i].token.equals("-75") && !tokens[i].token.equals("-74")
+                        && !tokens[i].token.equals("-73")) {
                     String siguienteToken = tokens[i].token;
                     if (!esOperadorMatematico(siguienteToken) && !siguienteToken.equals("-52")
                             && !siguienteToken.equals("-62")) {
-                        System.out.println("Error de operación: Token inesperado " + tokens[i]);
-                        error=true;
+                        System.out.println("Advertencia en la operación: Token inesperado " + tokens[i]);
+                        error = true;
 
                     }
                     i++;
@@ -294,8 +191,8 @@ public class Analizador {
                     String siguienteToken = tokens[i].token;
                     if (!esOperadorMatematico(siguienteToken) && !siguienteToken.equals("-53")
                             && !siguienteToken.equals("-63")) {
-                        System.out.println("Error de operación: Token inesperado " + tokens[i]);
-                        error=true;
+                        System.out.println("Advertencia en la operación: Token inesperado " + tokens[i]);
+                        error = true;
 
                     }
                     i++;
@@ -307,8 +204,8 @@ public class Analizador {
                     String siguienteToken = tokens[i].token;
                     if (!esOperadorMatematico(siguienteToken) && !siguienteToken.equals("-54")
                             && !siguienteToken.equals("-64") && !siguienteToken.equals("-65")) {
-                        System.out.println("Error de operación: Token inesperado " + tokens[i]);
-                        error=true;
+                        System.out.println("Advertencia en la operación: Token inesperado " + tokens[i]);
+                        error = true;
                     }
                     i++;
                 }
@@ -332,8 +229,8 @@ public class Analizador {
             if (token.token.equals("-51") || token.token.equals("-52") || token.token.equals("-53")
                     || token.token.equals("-54")) {
                 if (!simbolo.contains(token.lexema)) {
-                    System.err.println("Error: La variable " + token + " no está declarada");
-                    error=true;
+                    System.err.println("Advertencia: La variable " + token + " no está declarada");
+                    error = true;
 
                 }
             }
@@ -358,9 +255,10 @@ public class Analizador {
             tokens = new Token[numLineas];
             int i = 0;
             while ((linea = br.readLine()) != null) {
+                
                 String[] partes = linea.split(",", 4);
                 if (partes.length != 4) {
-                    System.err.println("Error, se espera que este en el siguiente formato\n" +
+                    System.err.println("Advertencia, se espera que este en el siguiente formato\n" +
                             "Lexema,Token,Posicion,Linea");
                     continue;
                 }
