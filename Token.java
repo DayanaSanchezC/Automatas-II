@@ -1,5 +1,3 @@
-package Analizador;
-
 public class Token {
     String lexema;
     String token;
